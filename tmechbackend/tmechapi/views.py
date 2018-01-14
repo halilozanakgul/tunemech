@@ -2,45 +2,84 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from tmechapi.models import Song
-from tmechapi.serializers import SongSerializer
+from tmechapi.models import Song, User
+from tmechapi.serializers import SongSerializer, UserSerializer
 
-@api_view(['GET', 'POST'])
-def song_list(request, format=None):
+@api_view(['GET'])
+def list_songs(request):
 	"""
-		List all songs or create a new one.
+		List all songs.
 	"""
-	if request.method == 'GET':
-		songs = Song.objects.all()
-		serializer = SongSerializer(songs, many=True)
-		return Response(serializer.data)
-	elif request.method == 'POST':
-		serializer = SongSerializer(data=request.data)
-		if serializer.is_valid():
-			return Response(serializer.data, status=status.HTTP_201_CREATED)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	songs = Song.objects.all()
+	serializer = SongSerializer(songs, many=True)
+	return Response(serializer.data)
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def song_detail(request, pk, format=None):
+@api_view(['GET'])
+def song_detail(request, pk):
 	"""
-		Get, put or delete song.
+		Get song details.
 	"""
 	try:
 		song = Song.objects.get(pk=pk)
 	except Song.DoesNotExist:
 		return Response(status=status.HTTP_404_NOT_FOUND)
 
-	if request.method == 'GET':
-		serializer = SongSerializer(song)
-		return Response(serializer.data)
+	serializer = SongSerializer(song)
+	return Response(serializer.data)
 
-	elif request.method == 'PUT':
-		serializer = SongSerializer(song, data=request.data)
-		if serializer.is_valid():
-			serializer.save()
-			return Response(serializer.data)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])	
+def list_users(request):
+	"""
+		List all users.
+	"""
+	users = User.objects.all()
+	serializer = UserSerializer(users, many=True)
+	return Response(serializer.data)
 
-	elif request.method == 'DELETE':
-		song.delete()
-		return Response(status=status.HTTP_204_NO_CONTENT)		
+@api_view(['GET'])
+def user_detail(request, pk):
+	"""
+		Get user details.
+	"""
+	try:
+		user = User.objects.get(pk=pk)
+	except User.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	serializer = UserSerializer(user)
+	return Response(serializer.data)
+
+@api_view(['POST'])
+def follow_song(request, pk):
+	"""
+		Add the song pk to the songs of request.userid.
+	"""
+
+	try:
+		song = Song.objects.get(pk=pk)
+		user = User.objects.get(pk=request.data['userid'])
+	except User.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+	except Song.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	user.songs.add(song)
+	return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def unfollow_song(request, pk):
+	"""
+		Remove the song pk to the songs of request.userid.
+	"""
+
+	try:
+		song = Song.objects.get(pk=pk)
+		user = User.objects.get(pk=request.data['userid'])
+	except User.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+	except Song.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	user.songs.remove(song)
+	return Response(status=status.HTTP_200_OK)
