@@ -13,3 +13,13 @@ class Song(models.Model):
 	class Meta:
 		ordering = ('title',)
 		
+class User(models.Model):
+	"""
+		The class of registered users.
+	"""
+
+	username = models.CharField(max_length=50)
+	songs = models.ManyToManyField(Song, related_name="listeners")
+
+	class Meta:
+		ordering = ('username',)
