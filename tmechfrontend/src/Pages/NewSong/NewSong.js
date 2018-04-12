@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import {Segment, Grid} from "semantic-ui-react";
 import axios from "axios";
 
-export default class HomePage extends React.Component {
+export default class NewSong extends React.Component {
   constructor(props){
     super(props);
     this.state = {
