@@ -4,6 +4,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from tmechapi.models import Song
 from tmechapi.serializers import SongSerializer
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import pprint
 
 @api_view(['GET'])
 def list_songs(request):
@@ -28,21 +31,47 @@ def song_detail(request, pk):
 	return Response(serializer.data)
 
 @api_view(['POST'])
-def new_song(request):
+def search_songs(request):
+	"""
+		Search the song on Spotify
+	"""
+	client_credentials_manager = SpotifyClientCredentials(client_id='', client_secret='')
+	sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+	query = request.data["query"]
+
+	response = sp.search(query, limit=3, type='track')
+
+	songs = []
+	print(query)
+
+	for track in response["tracks"]["items"]:
+		serializer = SongSerializer(data={"title":track["name"],
+										  "artist":track["artists"][0]["name"],
+										  "album":track["album"]["name"],
+										  "spotify_url":track["external_urls"]["spotify"],
+										  "album_image":track["album"]["images"][0]["url"],
+										  "spotify_id":track["id"]})
+		if serializer.is_valid():
+			serializer.save()
+		songs.append(serializer.data)
+
+	return Response(songs, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def add_song(request):
 	"""
 		Create a new song.
 		{
-			"title":"FRIENDS",
-			"artist":"Anne-Marie",
-			"album":"FRIENDS",
-			"spotify_url":"https://open.spotify.com/track/08bNPGLD8AhKpnnERrAc6G?context=spotify%3Auser%3Aspotify%3Aplaylist%3A37i9dQZF1DXcBWIGoYBM5M"
+			"title":"Dynamite",
+			"artist":"Taio Cruz",
+			"album":"ROKSTARR",
+			"spotify_url":"https://open.spotify.com/track/4lYKuF88iTBrppJoq03ujE",
+			"spotify_id":"4lYKuF88iTBrppJoq03ujE"
 		}
 	"""
+
 	serializer = SongSerializer(data=request.data)
-	print("ozan")
-	print(serializer.is_valid())
-	print(serializer)
 	if serializer.is_valid():
 		serializer.save()
-		print("akgul")
 	return Response(serializer.data, status=status.HTTP_201_CREATED)
