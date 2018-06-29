@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import {Form, Header, Container, Input, Segment, Grid, Button} from "semantic-ui-react";
+import {Dropdown, Form, Header, Container, Input, Segment, Grid, Button} from "semantic-ui-react";
 import {Link} from "react-router-dom";
 import axios from "axios";
 
@@ -17,6 +17,16 @@ export default class HomePage extends React.Component {
         }
       ],
       search_text: "",
+      search_result: [
+        {
+          title: "",
+          artist: "",
+          album: "",
+          spotify_url: "",
+          spotify_id: "",
+          album_photo: "",
+        }
+      ],
     }
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChangeSearch_text = this.handleChangeSearch_text.bind(this);
@@ -33,10 +43,13 @@ export default class HomePage extends React.Component {
     {
       query: this.state.search_text
     }).then(response=>{
-      console.log(response);
+      console.log(response)
+      this.setState({
+        search_result: response.data
+      })
     })
-    event.preventDefault();
   }
+
 
   render(){
     return (
@@ -50,6 +63,11 @@ export default class HomePage extends React.Component {
                   <input value={this.state.search_text} onChange={this.handleChangeSearch_text}/>
                 </Form.Field>
               </Form>
+              {
+                this.state.search_result.map((song) =>(
+                  <div>{song.title}</div>
+                ))
+              }
             </Grid.Column>
           </Grid.Row>
         </Grid>
