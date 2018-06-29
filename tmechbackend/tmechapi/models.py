@@ -9,6 +9,8 @@ class Song(models.Model):
 	artist = models.CharField(max_length=50)
 	album = models.CharField(max_length=50)
 	spotify_url = models.URLField()
+	album_image = models.URLField()
+	spotify_id = models.CharField(max_length=50, primary_key=True)
 
 	class Meta:
 		ordering = ('title',)
