@@ -75,3 +75,17 @@ def add_song(request):
 	if serializer.is_valid():
 		serializer.save()
 	return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+def get_recommendations(request):
+	"""
+		Returns the recommendations for the songs
+	"""
+	print(request.data)
+	recIDs = ["1DIS8YXZKxePLmY7Z8UC4I", "15pu8u4n3q4BKl4tF20c5v", "7jtawIveUcUDkYDTQ0T3I9", request.data["current_list"][0]]
+	recSongs = []
+	for id in recIDs:
+		recSongs.append(Song.objects.get(pk=id))
+	serializer = SongSerializer(recSongs, many=True)
+	return Response(serializer.data, status=status.HTTP_200_OK)

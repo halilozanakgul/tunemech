@@ -29,6 +29,7 @@ export default class HomePage extends React.Component {
           album_image: "",
         }
       ],
+      selected_song_ids: [],
       recommended_songs: [],
       played_song_id: "",
     }
@@ -65,9 +66,18 @@ export default class HomePage extends React.Component {
         break
       }
       this.state.search_result.splice(i, 1)
+      axios.post("http://127.0.0.1:8000/get_rec/",
+      {
+        current_list: [...this.state.selected_song_ids, spotify_id]
+      }).then(response=>{
+        this.setState({
+          recommended_songs: response.data
+        })
+        console.log(response.data)
+      })
       this.setState({
         selected_songs: [...this.state.selected_songs, selectedSong],
-        recommended_songs: [...this.state.recommended_songs, selectedSong],
+        selected_song_ids: [...this.state.selected_song_ids, spotify_id],
         played_song_id: spotify_id,
       })
   }
@@ -87,7 +97,7 @@ export default class HomePage extends React.Component {
             </Grid.Row>
           }
           <Grid.Row centered>
-              <Grid.Column width={5}>
+            <Grid.Column width={5}>
               <Form onSubmit={this.handleSubmit}>
                 <Form.Field>
                   <input value={this.state.search_text} onChange={this.handleChangeSearch_text} placeholder="Search a song..."/>
@@ -131,7 +141,8 @@ export default class HomePage extends React.Component {
             </Grid.Column>
             {
               this.state.selected_songs.length>0 && this.state.selected_songs[0]["title"].length>0 &&
-              <Grid.Column width={6}>
+              <Grid.Column centered width={6}>
+                <Header as='h1'>Your List</Header>
               {
                 this.state.selected_songs.map((song) =>(
                   <Segment className="selected_songs">
@@ -165,6 +176,35 @@ export default class HomePage extends React.Component {
             {
               this.state.recommended_songs.length > 0 &&
               <Grid.Column width={5}>
+                <Header as='h1' center>Our Recommendations</Header>
+              {
+                this.state.recommended_songs.map((song) =>(
+                  <Segment className="recommended_songs">
+                    <Grid>
+                      <Grid.Row style = {{"padding":"0"}}>
+                        <Grid.Column width = {3} style = {{"padding-left":"0"}}>
+                          <Image src={song.album_image} />
+                        </Grid.Column>
+                        <Grid.Column width = {13}>
+                          <Grid>
+                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"32px"}}>
+                              <div style = {{"font-size":"18pt"}}>{song.title}</div>
+                            </Grid.Row>
+                            <Grid.Row>
+                              <Grid.Column width = {6} style = {{"padding-left":"0"}}>
+                                <div style={{"color":"grey"}}>Artist:{song.artist}</div>
+                              </Grid.Column>
+                              <Grid.Column width = {10}>
+                                <div style={{"color":"grey"}}>Album:{song.album}</div>
+                              </Grid.Column>
+                            </Grid.Row>
+                          </Grid>
+                        </Grid.Column>
+                      </Grid.Row>
+                    </Grid>
+                  </Segment>
+                ))
+              }
               </Grid.Column>
             }
           </Grid.Row>
