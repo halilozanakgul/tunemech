@@ -1,3 +1,7 @@
 .center {
   text-align: center;
 }
+
+.search_result:hover{
+  box-shadow: 0px 0px 10px grey, 0px 5px 15px grey!important;
+}
