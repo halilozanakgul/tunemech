@@ -8,4 +8,6 @@ urlpatterns = [
 	url(r'^addsong/$', views.add_song),
 	url(r'^search_songs/$', views.search_songs),
 	url(r'^get_rec/$', views.get_recommendations),
+	url(r'^lists/$', views.list_lists),
+	url(r'^add_list/$', views.add_list),
 ]

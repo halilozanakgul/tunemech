@@ -15,6 +15,12 @@ class Song(models.Model):
 	class Meta:
 		ordering = ('title',)
 
+class List(models.Model):
+	"""
+		The list object that the songs will be collected.
+	"""
+	songs = models.ManyToManyField(Song, related_name="lists")
+
 class Tag(models.Model):
 	"""
 		The class of tags for songs.

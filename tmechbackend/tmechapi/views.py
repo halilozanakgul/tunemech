@@ -3,10 +3,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from tmechapi.models import Song
+from tmechapi.models import List
 from tmechapi.serializers import SongSerializer
+from tmechapi.serializers import ListSerializer
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import pprint
+import requests
+import ast
+import operator
 
 @api_view(['GET'])
 def list_songs(request):
@@ -35,7 +40,7 @@ def search_songs(request):
 	"""
 		Search the song on Spotify
 	"""
-	client_credentials_manager = SpotifyClientCredentials()
+	client_credentials_manager = SpotifyClientCredentials(client_id='9c7ae6e5a6c749bc88b05df636651355', client_secret='d19a691541b7409380a1282a25a36364')
 	sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 	query = request.data["query"]
@@ -82,10 +87,60 @@ def get_recommendations(request):
 	"""
 		Returns the recommendations for the songs
 	"""
-	print(request.data)
-	recIDs = ["1DIS8YXZKxePLmY7Z8UC4I", "15pu8u4n3q4BKl4tF20c5v", "7jtawIveUcUDkYDTQ0T3I9", request.data["current_list"][0]]
 	recSongs = []
-	for id in recIDs:
-		recSongs.append(Song.objects.get(pk=id))
+	lists = List.objects.all()
+	asso = {}
+	for list in lists:
+		list1 = list.songs.all()
+		list2 = list.songs.all()
+		for song1 in list1:
+			id1 = song1.spotify_id
+			for song2 in list2:
+				id2 = song2.spotify_id
+				if id1 != id2:
+					if not(id1 in asso):
+						asso[id1]={}
+					if not(id2 in asso[id1]):
+						asso[id1][id2] = 0
+					asso[id1][id2]=asso[id1][id2]+1
+	recDict = {}
+	print("--------")
+	for id in request.data["current_list"]:
+		for rec in asso[id]:
+			if not(rec in recDict):
+				recDict[rec] = 0
+			recDict[rec] += asso[id][rec]
+	for id in request.data["current_list"]:
+		if id in recDict:
+			del recDict[id]
+	sortedDict = sorted(recDict.items(), key = operator.itemgetter(1))
+	recs = []
+	for tup in reversed(sortedDict):
+		recs.append(tup[0])
+	for song in recs:
+		recSongs.append(Song.objects.get(pk=song))
 	serializer = SongSerializer(recSongs, many=True)
 	return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def add_list(request):
+	"""
+		Posts the list to recommendation database
+	"""
+	list = List()
+	list.save()
+	for id in request.data["list"]:
+		song = Song.objects.get(pk=id)
+		list.songs.add(song)
+	return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def list_lists(request):
+	"""
+		List all lists.
+	"""
+	lists = List.objects.all()
+	serializer = ListSerializer(lists, many=True)
+	return Response(serializer.data)

@@ -1,8 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import {Message, Image, Dropdown, Form, Header, Container, Input, Segment, Grid, Button} from "semantic-ui-react";
+import {Message, Image, Dropdown, Form, Header, Icon, Container, Input, Segment, Grid, Button} from "semantic-ui-react";
 import {Link} from "react-router-dom";
 import axios from "axios";
+import {Helmet} from 'react-helmet';
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import "./HomePage.css";
 
 export default class HomePage extends React.Component {
@@ -36,6 +38,14 @@ export default class HomePage extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChangeSearch_text = this.handleChangeSearch_text.bind(this);
     this.handleResultSelect = this.handleResultSelect.bind(this);
+    this.handleAddList = this.handleAddList.bind(this);
+  }
+
+  handleAddList(event){
+    axios.post("http://127.0.0.1:8000/add_list/",
+    {
+      list: this.state.selected_song_ids
+    })
   }
 
   handleChangeSearch_text(event){
@@ -71,22 +81,30 @@ export default class HomePage extends React.Component {
         current_list: [...this.state.selected_song_ids, spotify_id]
       }).then(response=>{
         this.setState({
-          recommended_songs: response.data
+          recommended_songs: response.data,
+          played_song_id: response.data[0].spotify_id,
         })
         console.log(response.data)
       })
       this.setState({
         selected_songs: [...this.state.selected_songs, selectedSong],
         selected_song_ids: [...this.state.selected_song_ids, spotify_id],
-        played_song_id: spotify_id,
       })
   }
 
 
   render(){
     return (
-      <Container style={{ paddingTop: '3em', paddingLeft:'3em', paddingRight: '3em'}} fluid>
-        <Header color="yellow" textAlign='center' style={{'font-size' : '50px'}}>tunemech</Header>
+      <Container style={{ paddingTop: '3em', paddingLeft:'3em', paddingRight: '3em', animationName:'moveUp', animationDuration:'4s'}} fluid>
+        {
+          this.state.search_result[0].title.length == 0 &&
+          <div style={{paddingTop:'22em'}}>
+          </div>
+        }
+        <Helmet>
+          <style>{"body {background-color:#FFFFFF;}"}</style>
+        </Helmet>
+        <Header color='yellow' textAlign='center' style={{ fontSize : '50px'}}>tunemech</Header>
         <Grid>
           {
             this.state.played_song_id.length > 0 &&
@@ -110,11 +128,11 @@ export default class HomePage extends React.Component {
                     <Grid>
                       <Grid.Row style = {{"padding":"0"}}>
                         <Grid.Column width = {3} style = {{"padding-left":"0"}}>
-                          <Image src={song.album_image} />
+                          <Image src={song.album_image}/>
                         </Grid.Column>
                         <Grid.Column width = {13}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"32px"}}>
+                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"27px"}}>
                               <div style = {{"font-size":"18pt"}}>{song.title}</div>
                             </Grid.Row>
                             <Grid.Row>
@@ -151,9 +169,9 @@ export default class HomePage extends React.Component {
                         <Grid.Column width = {3} style = {{"padding-left":"0"}}>
                           <Image src={song.album_image} />
                         </Grid.Column>
-                        <Grid.Column width = {13}>
+                        <Grid.Column width = {12}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"32px"}}>
+                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"42px"}}>
                               <div style = {{"font-size":"18pt"}}>{song.title}</div>
                             </Grid.Row>
                             <Grid.Row>
@@ -166,11 +184,17 @@ export default class HomePage extends React.Component {
                             </Grid.Row>
                           </Grid>
                         </Grid.Column>
+                        <Grid.Column width = {1}>
+                          <Icon link name = 'close' size='large' style = {{marginTop:'5px'}}/>
+                        </Grid.Column>
                       </Grid.Row>
                     </Grid>
                   </Segment>
                 ))
               }
+              <Button floated = 'right' onClick = {this.handleAddList}>
+                Add
+              </Button>
               </Grid.Column>
             }
             {
@@ -187,7 +211,7 @@ export default class HomePage extends React.Component {
                         </Grid.Column>
                         <Grid.Column width = {13}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"32px"}}>
+                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"27px"}}>
                               <div style = {{"font-size":"18pt"}}>{song.title}</div>
                             </Grid.Row>
                             <Grid.Row>
