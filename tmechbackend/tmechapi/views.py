@@ -3,7 +3,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from tmechapi.models import Song
+from tmechapi.models import List
 from tmechapi.serializers import SongSerializer
+from tmechapi.serializers import ListSerializer
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import pprint
@@ -85,31 +87,16 @@ def get_recommendations(request):
 	"""
 		Returns the recommendations for the songs
 	"""
-	"""
-	requests.post("https://private:286967b067503df6a9fb355aad718591@eu-north.suggestgrid.space/10716d32-555c-459d-a2b0-976104603401/v1/actions", data =
-	'{ "type": "lists", "user_id": "6", "item_id":"' + request.data["current_list"][-1] + '" }'
-	)
-	recs= requests.post("https://private:286967b067503df6a9fb355aad718591@eu-north.suggestgrid.space/10716d32-555c-459d-a2b0-976104603401/v1/recommend/items", data =
-	'{ "type": "lists", "user_id": "5"}'
-	).content.decode("utf-8")
-	recs = ast.literal_eval(recs)["items"]"""
 	recSongs = []
-	lists = [["6mICuAdrwEjh6Y6lroV2Kg", "3ZFTkvIE7kyPt6Nu3PEa7V", "2lnzGkdtDj5mtlcOW2yRtG", "1IaYWv32nFFMdljBIjMY5T", "1FKxKGONukVFXWVJxAKmlz"],
-			 ["6mICuAdrwEjh6Y6lroV2Kg", "3ZFTkvIE7kyPt6Nu3PEa7V", "2lnzGkdtDj5mtlcOW2yRtG", "1FKxKGONukVFXWVJxAKmlz"],
-			 ["6mICuAdrwEjh6Y6lroV2Kg", "3ZFTkvIE7kyPt6Nu3PEa7V", "2lnzGkdtDj5mtlcOW2yRtG", "1IaYWv32nFFMdljBIjMY5T"],
-			 ["6mICuAdrwEjh6Y6lroV2Kg", "3ZFTkvIE7kyPt6Nu3PEa7V", "2lnzGkdtDj5mtlcOW2yRtG", "1IaYWv32nFFMdljBIjMY5T", "1FKxKGONukVFXWVJxAKmlz", "0Ji2g9AlYLVHAMG5PJoHPU"],
-			 ["6mICuAdrwEjh6Y6lroV2Kg", "3ZFTkvIE7kyPt6Nu3PEa7V", "2lnzGkdtDj5mtlcOW2yRtG", "0Ji2g9AlYLVHAMG5PJoHPU"],
-			 ["6mICuAdrwEjh6Y6lroV2Kg", "0Ji2g9AlYLVHAMG5PJoHPU"],
-			 ["69RoAhDqFOiQb2pQvb24Ii", "1p8Po4X9rWvMOuGR2vhVI2", "2oLjhx7w8Hyd3gry9cCXr7", "29W4Yr3WWYRHgUjnvg2S8C"],
-			 ["69RoAhDqFOiQb2pQvb24Ii", "1p8Po4X9rWvMOuGR2vhVI2", "29W4Yr3WWYRHgUjnvg2S8C"],
-			 ["69RoAhDqFOiQb2pQvb24Ii", "1p8Po4X9rWvMOuGR2vhVI2", "2oLjhx7w8Hyd3gry9cCXr7", "29W4Yr3WWYRHgUjnvg2S8C", "4VSsmh2cHdqKhYZdRBqv3L"],
-			 ["69RoAhDqFOiQb2pQvb24Ii", "1p8Po4X9rWvMOuGR2vhVI2", "1YIkJe2liZVGzSPyq6B6ij"],
-			 ["69RoAhDqFOiQb2pQvb24Ii", "1p8Po4X9rWvMOuGR2vhVI2", "4VSsmh2cHdqKhYZdRBqv3L"]
-			 ]
+	lists = List.objects.all()
 	asso = {}
 	for list in lists:
-		for id1 in list:
-			for id2 in list:
+		list1 = list.songs.all()
+		list2 = list.songs.all()
+		for song1 in list1:
+			id1 = song1.spotify_id
+			for song2 in list2:
+				id2 = song2.spotify_id
 				if id1 != id2:
 					if not(id1 in asso):
 						asso[id1]={}
@@ -117,11 +104,15 @@ def get_recommendations(request):
 						asso[id1][id2] = 0
 					asso[id1][id2]=asso[id1][id2]+1
 	recDict = {}
+	print("--------")
 	for id in request.data["current_list"]:
 		for rec in asso[id]:
 			if not(rec in recDict):
 				recDict[rec] = 0
 			recDict[rec] += asso[id][rec]
+	for id in request.data["current_list"]:
+		if id in recDict:
+			del recDict[id]
 	sortedDict = sorted(recDict.items(), key = operator.itemgetter(1))
 	recs = []
 	for tup in reversed(sortedDict):
@@ -137,11 +128,19 @@ def add_list(request):
 	"""
 		Posts the list to recommendation database
 	"""
-	print(request.data)
-	#requests.get("https://private:286967b067503df6a9fb355aad718591@eu-north.suggestgrid.space/10716d32-555c-459d-a2b0-976104603401")
-	#requests.put("https://private:286967b067503df6a9fb355aad718591@eu-north.suggestgrid.space/10716d32-555c-459d-a2b0-976104603401/v1/types/lists")
-	for song in request.data["list"]:
-		print(requests.post("https://private:286967b067503df6a9fb355aad718591@eu-north.suggestgrid.space/10716d32-555c-459d-a2b0-976104603401/v1/actions", data =
-		'{ "type": "lists", "user_id": "5", "item_id":"' + song + '" }'
-		).content)
+	list = List()
+	list.save()
+	for id in request.data["list"]:
+		song = Song.objects.get(pk=id)
+		list.songs.add(song)
 	return Response(status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def list_lists(request):
+	"""
+		List all lists.
+	"""
+	lists = List.objects.all()
+	serializer = ListSerializer(lists, many=True)
+	return Response(serializer.data)
