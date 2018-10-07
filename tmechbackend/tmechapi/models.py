@@ -5,12 +5,12 @@ class Song(models.Model):
 		The song object that the users will create.
 	"""
 
-	title = models.CharField(max_length=50)
-	artist = models.CharField(max_length=50)
-	album = models.CharField(max_length=50)
+	title = models.CharField(max_length=200)
+	artist = models.CharField(max_length=200)
+	album = models.CharField(max_length=200)
 	spotify_url = models.URLField()
 	album_image = models.URLField()
-	spotify_id = models.CharField(max_length=50, primary_key=True)
+	spotify_id = models.CharField(max_length=200, primary_key=True)
 
 	class Meta:
 		ordering = ('title',)

@@ -107,7 +107,7 @@ def get_recommendations(request):
 			continue
 		if relSong in rec:
 			del rec[relSong]
-	if !len(rec):
+	if len(rec) ==	 0:
 		return Response([], status=status.HTTP_200_OK)
 	sortedRec = sorted(rec.items(), key=operator.itemgetter(1))[::-1]
 	sortedRec = sortedRec[:10]
@@ -128,8 +128,11 @@ def add_list(request):
 	list = List()
 	list.save()
 	for song in request.data["list"]:
+		print("song =", song)
 		serializer = SongSerializer(data=song)
+		print("serializer = ",serializer)
 		if serializer.is_valid():
+			print("??? validd")
 			serializer.save()
 		song = Song.objects.get(pk = song["spotify_id"])
 		list.songs.add(song)
