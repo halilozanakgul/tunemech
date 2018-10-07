@@ -1,10 +1,7 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import {Message, Image, Dropdown, Form, Header, Icon, Container, Input, Segment, Grid, Button} from "semantic-ui-react";
-import {Link} from "react-router-dom";
+import {Message, Image, Label, Form, Header, Icon, Container, Segment, Grid, Button} from "semantic-ui-react";
 import axios from "axios";
 import {Helmet} from 'react-helmet';
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import "./HomePage.css";
 
 export default class HomePage extends React.Component {
@@ -29,9 +26,9 @@ export default class HomePage extends React.Component {
           spotify_url: "",
           spotify_id: "",
           album_image: "",
+          mech: 0,
         }
       ],
-      selected_song_ids: [],
       recommended_songs: [],
       played_song_id: "",
     }
@@ -39,12 +36,18 @@ export default class HomePage extends React.Component {
     this.handleChangeSearch_text = this.handleChangeSearch_text.bind(this);
     this.handleResultSelect = this.handleResultSelect.bind(this);
     this.handleAddList = this.handleAddList.bind(this);
+    this.handleReset = this.handleReset.bind(this);
+  }
+
+  handleReset(event){
+    console.log("Reset")
+    axios.post("http://127.0.0.1:8000/reset/")
   }
 
   handleAddList(event){
     axios.post("http://127.0.0.1:8000/add_list/",
     {
-      list: this.state.selected_song_ids
+      list: this.state.selected_songs
     })
   }
 
@@ -59,45 +62,43 @@ export default class HomePage extends React.Component {
     {
       query: this.state.search_text
     }).then(response=>{
-      console.log(response)
       this.setState({
         search_result: response.data
       })
-      console.log(this.state.search_result);
     })
   }
 
-  handleResultSelect(spotify_id){
+  handleResultSelect(song){
     let i = 0
-    let selectedSong = {}
-    for(i=0; i<this.state.search_result.length; i++)
-      if(this.state.search_result[i].spotify_id == spotify_id){
-        selectedSong = this.state.search_result[i]
-        break
-      }
-      this.state.search_result.splice(i, 1)
-      axios.post("http://127.0.0.1:8000/get_rec/",
-      {
-        current_list: [...this.state.selected_song_ids, spotify_id]
-      }).then(response=>{
+    this.state.search_result.splice(i, 1)
+    axios.post("http://127.0.0.1:8000/get_rec/",
+    {
+      current_list: [...this.state.selected_songs, song]
+    }).then(response=>{
+      if(response.data && response.data[0]){
         this.setState({
           recommended_songs: response.data,
-          played_song_id: response.data[0].spotify_id,
-        })
-        console.log(response.data)
-      })
-      this.setState({
-        selected_songs: [...this.state.selected_songs, selectedSong],
-        selected_song_ids: [...this.state.selected_song_ids, spotify_id],
-      })
+          played_song_id: response.data[0]["spotify_id"],
+        });
+      }
+      else{
+        this.setState({
+          recommended_songs: [],
+          played_song_id: "",
+        });
+      }
+    })
+    this.setState({
+      selected_songs: [...this.state.selected_songs, song],
+    })
   }
 
 
   render(){
     return (
-      <Container style={{ paddingTop: '3em', paddingLeft:'3em', paddingRight: '3em', animationName:'moveUp', animationDuration:'4s'}} fluid>
+      <Container style={{ paddingTop: '3em', paddingLeft:'3em', paddingRight: '3em'}} fluid>
         {
-          this.state.search_result[0].title.length == 0 &&
+          (!this.state.search_result || !this.state.search_result[0] || this.state.search_result[0].title.length === 0) &&
           <div style={{paddingTop:'22em'}}>
           </div>
         }
@@ -107,10 +108,10 @@ export default class HomePage extends React.Component {
         <Header color='yellow' textAlign='center' style={{ fontSize : '50px'}}>tunemech</Header>
         <Grid>
           {
-            this.state.played_song_id.length > 0 &&
+            this.state.played_song_id && this.state.played_song_id.length > 0 &&
             <Grid.Row centered>
               <Grid.Column width={6}>
-                <iframe src={"https://open.spotify.com/embed?uri=spotify:track:"+this.state.played_song_id} width='100%' height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+                <iframe title="spotifyPlayer" src={"https://open.spotify.com/embed?uri=spotify:track:"+this.state.played_song_id} width='100%' height="80" frameBorder="0" allowtransparency="true" allow="encrypted-media"></iframe>
               </Grid.Column>
             </Grid.Row>
           }
@@ -124,19 +125,19 @@ export default class HomePage extends React.Component {
               {
                 this.state.search_result.length>0 && this.state.search_result[0]["title"].length>0 &&
                 this.state.search_result.map((song) =>(
-                  <Segment className="search_result" onClick={() => this.handleResultSelect(song.spotify_id)}>
+                  <Segment key={song["spotify_id"]} className="search_result" onClick={() => this.handleResultSelect(song)}>
                     <Grid>
                       <Grid.Row style = {{"padding":"0"}}>
-                        <Grid.Column width = {3} style = {{"padding-left":"0"}}>
+                        <Grid.Column width = {3} style = {{"paddingLeft":"0"}}>
                           <Image src={song.album_image}/>
                         </Grid.Column>
                         <Grid.Column width = {13}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"27px"}}>
-                              <div style = {{"font-size":"18pt"}}>{song.title}</div>
+                            <Grid.Row style = {{"paddingBottom":"0", "paddingTop":"27px"}}>
+                              <div style = {{"fontSize":"18pt"}}>{song.title}</div>
                             </Grid.Row>
                             <Grid.Row>
-                              <Grid.Column width = {6} style = {{"padding-left":"0"}}>
+                              <Grid.Column width = {6} style = {{"paddingLeft":"0"}}>
                                 <div style={{"color":"grey"}}>Artist:{song.artist}</div>
                               </Grid.Column>
                               <Grid.Column width = {10}>
@@ -151,7 +152,7 @@ export default class HomePage extends React.Component {
                 ))
               }
               {
-                this.state.search_result.length == 0 &&
+                this.state.search_result.length === 0 &&
                 <Message color="yellow">
                   No result found!
                 </Message>
@@ -159,23 +160,23 @@ export default class HomePage extends React.Component {
             </Grid.Column>
             {
               this.state.selected_songs.length>0 && this.state.selected_songs[0]["title"].length>0 &&
-              <Grid.Column centered width={6}>
+              <Grid.Column centered="true" width={6}>
                 <Header as='h1'>Your List</Header>
               {
                 this.state.selected_songs.map((song) =>(
-                  <Segment className="selected_songs">
+                  <Segment key={song["spotify_id"]} className="selected_songs">
                     <Grid>
                       <Grid.Row style = {{"padding":"0"}}>
-                        <Grid.Column width = {3} style = {{"padding-left":"0"}}>
+                        <Grid.Column width = {3} style = {{"paddingLeft":"0"}}>
                           <Image src={song.album_image} />
                         </Grid.Column>
                         <Grid.Column width = {12}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"42px"}}>
-                              <div style = {{"font-size":"18pt"}}>{song.title}</div>
+                            <Grid.Row style = {{"paddingBottom":"0", "paddingTop":"42px"}}>
+                              <div style = {{"fontSize":"18pt"}}>{song.title}</div>
                             </Grid.Row>
                             <Grid.Row>
-                              <Grid.Column width = {6} style = {{"padding-left":"0"}}>
+                              <Grid.Column width = {6} style = {{"paddingLeft":"0"}}>
                                 <div style={{"color":"grey"}}>Artist:{song.artist}</div>
                               </Grid.Column>
                               <Grid.Column width = {10}>
@@ -200,22 +201,23 @@ export default class HomePage extends React.Component {
             {
               this.state.recommended_songs.length > 0 &&
               <Grid.Column width={5}>
-                <Header as='h1' center>Our Recommendations</Header>
+                <Header as='h1' center="true">Our Recommendations</Header>
               {
                 this.state.recommended_songs.map((song) =>(
-                  <Segment className="recommended_songs">
+                  <Segment key={song.spotify_id} className="recommended_songs">
                     <Grid>
                       <Grid.Row style = {{"padding":"0"}}>
-                        <Grid.Column width = {3} style = {{"padding-left":"0"}}>
+                        <Grid.Column width = {3} style = {{"paddingLeft":"0"}}>
                           <Image src={song.album_image} />
                         </Grid.Column>
                         <Grid.Column width = {13}>
                           <Grid>
-                            <Grid.Row style = {{"padding-bottom":"0", "padding-top":"27px"}}>
-                              <div style = {{"font-size":"18pt"}}>{song.title}</div>
+                            <Grid.Row style = {{"paddingBottom":"0", "paddingTop":"27px"}}>
+                              <div style = {{"fontSize":"18pt"}}>{song.title}</div>
+                              <Label color='yellow' circular>{song.mech}</Label>
                             </Grid.Row>
                             <Grid.Row>
-                              <Grid.Column width = {6} style = {{"padding-left":"0"}}>
+                              <Grid.Column width = {6} style = {{"paddingLeft":"0"}}>
                                 <div style={{"color":"grey"}}>Artist:{song.artist}</div>
                               </Grid.Column>
                               <Grid.Column width = {10}>
@@ -233,6 +235,7 @@ export default class HomePage extends React.Component {
             }
           </Grid.Row>
         </Grid>
+        <Button onClick={this.handleReset}>Reset</Button>
       </Container>
     )
   }

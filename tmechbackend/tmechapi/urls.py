@@ -10,4 +10,5 @@ urlpatterns = [
 	url(r'^get_rec/$', views.get_recommendations),
 	url(r'^lists/$', views.list_lists),
 	url(r'^add_list/$', views.add_list),
+	url(r'^reset/$', views.reset),
 ]
