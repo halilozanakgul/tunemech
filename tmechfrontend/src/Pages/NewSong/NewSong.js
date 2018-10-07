@@ -1,5 +1,4 @@
 import React from "react";
-import ReactDOM from "react-dom";
 import {Segment, Grid, Form, Button} from "semantic-ui-react";
 import {Link} from "react-router-dom";
 import axios from "axios";

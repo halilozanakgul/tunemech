@@ -48,18 +48,15 @@ def search_songs(request):
 	response = sp.search(query, limit=10, type='track')
 
 	songs = []
-	print(query)
 
 	for track in response["tracks"]["items"]:
-		serializer = SongSerializer(data={"title":track["name"],
-										  "artist":track["artists"][0]["name"],
-										  "album":track["album"]["name"],
-										  "spotify_url":track["external_urls"]["spotify"],
-										  "album_image":track["album"]["images"][0]["url"],
-										  "spotify_id":track["id"]})
-		if serializer.is_valid():
-			serializer.save()
-		songs.append(serializer.data)
+		song={"title":track["name"],
+		  	  "artist":track["artists"][0]["name"],
+		 	  "album":track["album"]["name"],
+			  "spotify_url":track["external_urls"]["spotify"],
+			  "album_image":track["album"]["images"][0]["url"],
+			  "spotify_id":track["id"]}
+		songs.append(song);
 
 	return Response(songs, status=status.HTTP_200_OK)
 
@@ -87,40 +84,40 @@ def get_recommendations(request):
 	"""
 		Returns the recommendations for the songs
 	"""
-	recSongs = []
-	lists = List.objects.all()
-	asso = {}
-	for list in lists:
-		list1 = list.songs.all()
-		list2 = list.songs.all()
-		for song1 in list1:
-			id1 = song1.spotify_id
-			for song2 in list2:
-				id2 = song2.spotify_id
-				if id1 != id2:
-					if not(id1 in asso):
-						asso[id1]={}
-					if not(id2 in asso[id1]):
-						asso[id1][id2] = 0
-					asso[id1][id2]=asso[id1][id2]+1
-	recDict = {}
-	print("--------")
-	for id in request.data["current_list"]:
-		for rec in asso[id]:
-			if not(rec in recDict):
-				recDict[rec] = 0
-			recDict[rec] += asso[id][rec]
-	for id in request.data["current_list"]:
-		if id in recDict:
-			del recDict[id]
-	sortedDict = sorted(recDict.items(), key = operator.itemgetter(1))
-	recs = []
-	for tup in reversed(sortedDict):
-		recs.append(tup[0])
-	for song in recs:
-		recSongs.append(Song.objects.get(pk=song))
-	serializer = SongSerializer(recSongs, many=True)
-	return Response(serializer.data, status=status.HTTP_200_OK)
+	print("znnn");
+	rec = {}
+	for song in request.data["current_list"]:
+		try:
+			song = Song.objects.get(pk = song["spotify_id"])
+		except Song.DoesNotExist:
+			print("no song")
+			continue
+		lists = song.lists.all()
+		for list in lists:
+			for relSong in list.songs.all():
+				if relSong.spotify_id != song.spotify_id:
+					if not(relSong in rec):
+						rec[relSong] = 0
+					rec[relSong] += relSong.lists.count() / List.objects.count()
+	for song in request.data["current_list"]:
+		print(song)
+		try:
+			relSong = Song.objects.get(pk = song["spotify_id"])
+		except Song.DoesNotExist:
+			continue
+		if relSong in rec:
+			del rec[relSong]
+	if !len(rec):
+		return Response([], status=status.HTTP_200_OK)
+	sortedRec = sorted(rec.items(), key=operator.itemgetter(1))[::-1]
+	sortedRec = sortedRec[:10]
+	res = []
+	normal = 100 / sortedRec[0][1]
+	for topRec in sortedRec:
+		song = SongSerializer(topRec[0]).data
+		song["mech"] = int(topRec[1] * normal)
+		res.append(song)
+	return Response(res, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -130,8 +127,11 @@ def add_list(request):
 	"""
 	list = List()
 	list.save()
-	for id in request.data["list"]:
-		song = Song.objects.get(pk=id)
+	for song in request.data["list"]:
+		serializer = SongSerializer(data=song)
+		if serializer.is_valid():
+			serializer.save()
+		song = Song.objects.get(pk = song["spotify_id"])
 		list.songs.add(song)
 	return Response(status=status.HTTP_200_OK)
 
@@ -144,3 +144,12 @@ def list_lists(request):
 	lists = List.objects.all()
 	serializer = ListSerializer(lists, many=True)
 	return Response(serializer.data)
+
+@api_view(['POST'])
+def reset(request):
+	"""
+		Delete all of the database
+	"""
+	Song.objects.all().delete()
+	List.objects.all().delete()
+	return Response(status=status.HTTP_200_OK)
