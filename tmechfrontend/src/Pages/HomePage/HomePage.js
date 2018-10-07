@@ -1,5 +1,5 @@
 import React from "react";
-import {Message, Image, Label, Form, Header, Icon, Container, Segment, Grid, Button} from "semantic-ui-react";
+import {Message, Image, Label, Input, Form, Header, Icon, Container, Segment, Grid, Button} from "semantic-ui-react";
 import axios from "axios";
 import {Helmet} from 'react-helmet';
 import "./HomePage.css";
@@ -26,11 +26,12 @@ export default class HomePage extends React.Component {
           spotify_url: "",
           spotify_id: "",
           album_image: "",
-          mech: 0,
         }
       ],
       recommended_songs: [],
       played_song_id: "",
+      is_loading: false,
+      has_written: false,
     }
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChangeSearch_text = this.handleChangeSearch_text.bind(this);
@@ -53,23 +54,30 @@ export default class HomePage extends React.Component {
 
   handleChangeSearch_text(event){
     this.setState({
+      has_written: true,
       search_text: event.target.value
+    }, function() {
+      this.handleSubmit(event);
     });
   }
 
   handleSubmit(event){
+    this.setState({
+      is_loading: true,
+    })
     axios.post("http://127.0.0.1:8000/search_songs/",
     {
       query: this.state.search_text
     }).then(response=>{
       this.setState({
+        is_loading: false,
         search_result: response.data
       })
     })
   }
 
-  handleResultSelect(song){
-    let i = 0
+  handleResultSelect(song, index){
+    let i = index
     this.state.search_result.splice(i, 1)
     axios.post("http://127.0.0.1:8000/get_rec/",
     {
@@ -98,7 +106,7 @@ export default class HomePage extends React.Component {
     return (
       <Container style={{ paddingTop: '3em', paddingLeft:'3em', paddingRight: '3em'}} fluid>
         {
-          (!this.state.search_result || !this.state.search_result[0] || this.state.search_result[0].title.length === 0) &&
+          (!this.state.has_written) &&
           <div style={{paddingTop:'22em'}}>
           </div>
         }
@@ -119,13 +127,17 @@ export default class HomePage extends React.Component {
             <Grid.Column width={5}>
               <Form onSubmit={this.handleSubmit}>
                 <Form.Field>
-                  <input value={this.state.search_text} onChange={this.handleChangeSearch_text} placeholder="Search a song..."/>
+                  <Input
+                    loading={this.state.is_loading}
+                    onChange={this.handleChangeSearch_text}
+                    placeholder="Search a song..."
+                  />
                 </Form.Field>
               </Form>
               {
                 this.state.search_result.length>0 && this.state.search_result[0]["title"].length>0 &&
-                this.state.search_result.map((song) =>(
-                  <Segment key={song["spotify_id"]} className="search_result" onClick={() => this.handleResultSelect(song)}>
+                this.state.search_result.map((song, i) =>(
+                  <Segment key={song["spotify_id"]} className="search_result" onClick={() => this.handleResultSelect(song, i)}>
                     <Grid>
                       <Grid.Row style = {{"padding":"0"}}>
                         <Grid.Column width = {3} style = {{"paddingLeft":"0"}}>
@@ -185,17 +197,11 @@ export default class HomePage extends React.Component {
                             </Grid.Row>
                           </Grid>
                         </Grid.Column>
-                        <Grid.Column width = {1}>
-                          <Icon link name = 'close' size='large' style = {{marginTop:'5px'}}/>
-                        </Grid.Column>
                       </Grid.Row>
                     </Grid>
                   </Segment>
                 ))
               }
-              <Button floated = 'right' onClick = {this.handleAddList}>
-                Add
-              </Button>
               </Grid.Column>
             }
             {
@@ -235,7 +241,6 @@ export default class HomePage extends React.Component {
             }
           </Grid.Row>
         </Grid>
-        <Button onClick={this.handleReset}>Reset</Button>
       </Container>
     )
   }
