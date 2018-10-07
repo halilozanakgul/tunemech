@@ -40,7 +40,7 @@ def search_songs(request):
 	"""
 		Search the song on Spotify
 	"""
-	client_credentials_manager = SpotifyClientCredentials(client_id='9c7ae6e5a6c749bc88b05df636651355', client_secret='d19a691541b7409380a1282a25a36364')
+	client_credentials_manager = SpotifyClientCredentials(client_id='<your client id here>', client_secret='<your client secret here>')
 	sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
 	query = request.data["query"]
