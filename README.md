@@ -1,6 +1,8 @@
 # tunemech
 A song recommendation application
 
-This application will recommend new songs based on your current song list
+This application recommends new songs based on your current song list.
 
-In the end it will be able to connect to your Spotify Account and learn your songs from there.
+The songs are searched at the Spotify.
+
+The recommendations are done based on the correlation of the songs with the user's list and the popularity of the songs in the whole database.
